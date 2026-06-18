@@ -41,8 +41,41 @@ db.auth.onAuthStateChange((event, session) => {
   }
 })
 
+// ─── PROTEÇÃO DE LOGIN (rate limiting no cliente) ─────────────────────────────
+// Trava o botão após várias falhas, com espera crescente. O Supabase Auth também
+// aplica limite no servidor — isto é uma camada extra contra força-bruta casual.
+const LOGIN_MAX = 5
+const LOGIN_LOCK_BASE = 30000            // 30s; dobra a cada falha extra (teto 10 min)
+let loginFails = Number(localStorage.getItem('mira-login-fails') || 0)
+let lockTimer = null
+
+function loginLockMs() {
+  return Math.max(0, Number(localStorage.getItem('mira-lock-until') || 0) - Date.now())
+}
+
+function atualizaTrava() {
+  const btn = document.getElementById('login-btn')
+  const err = document.getElementById('login-error')
+  const ms = loginLockMs()
+  if (ms <= 0) {
+    if (lockTimer) { clearInterval(lockTimer); lockTimer = null }
+    btn.disabled = false
+    btn.textContent = 'Entrar'
+    return false
+  }
+  btn.disabled = true
+  btn.textContent = `Aguarde ${Math.ceil(ms / 1000)}s`
+  err.textContent = 'Muitas tentativas. Aguarde antes de tentar de novo.'
+  err.classList.remove('hidden')
+  if (!lockTimer) lockTimer = setInterval(atualizaTrava, 1000)
+  return true
+}
+atualizaTrava()  // reaplica a trava se a página recarregar durante o bloqueio
+
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault()
+  if (atualizaTrava()) return            // bloqueado: nem tenta autenticar
+
   const btn = document.getElementById('login-btn')
   const err = document.getElementById('login-error')
   btn.textContent = 'Entrando...'
@@ -55,10 +88,22 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   })
 
   if (error) {
-    err.textContent = 'E-mail ou senha incorretos'
-    err.classList.remove('hidden')
-    btn.textContent = 'Entrar'
-    btn.disabled = false
+    loginFails++
+    localStorage.setItem('mira-login-fails', loginFails)
+    if (loginFails >= LOGIN_MAX) {
+      const dur = Math.min(LOGIN_LOCK_BASE * 2 ** (loginFails - LOGIN_MAX), 600000)
+      localStorage.setItem('mira-lock-until', Date.now() + dur)
+      atualizaTrava()
+    } else {
+      err.textContent = `E-mail ou senha incorretos (${LOGIN_MAX - loginFails} tentativa(s) restante(s))`
+      err.classList.remove('hidden')
+      btn.textContent = 'Entrar'
+      btn.disabled = false
+    }
+  } else {
+    loginFails = 0
+    localStorage.removeItem('mira-login-fails')
+    localStorage.removeItem('mira-lock-until')
   }
 })
 
