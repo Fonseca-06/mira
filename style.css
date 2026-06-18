@@ -501,14 +501,7 @@ textarea.form-control { resize: vertical; font-family: inherit; }
   margin-bottom: 16px;
 }
 
-/* ── FORMAÇÃO DE PREÇO ────────────────────────────────────────── */
-.formacao-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
-}
-
+/* ── FORM CARD (usado no Cruzamento) ──────────────────────────── */
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -517,28 +510,6 @@ textarea.form-control { resize: vertical; font-family: inherit; }
 }
 
 .form-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 20px; }
-
-.resultado-empty {
-  color: var(--text-muted);
-  text-align: center;
-  padding: 40px 0;
-  font-size: 14px;
-}
-
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-}
-
-.result-row:last-child { border-bottom: none; }
-.result-row.highlight { font-weight: 700; color: var(--primary); }
-.result-row.grand-total { font-weight: 800; font-size: 16px; color: var(--primary); padding-top: 14px; border-top: 2px solid var(--primary); border-bottom: none; margin-top: 6px; }
-.result-label { color: var(--text-secondary); }
-.result-value { font-weight: 600; }
 
 /* ── HISTÓRICO ────────────────────────────────────────────────── */
 .chart-wrapper {
@@ -592,10 +563,6 @@ code { font-family: monospace; color: var(--primary); background: rgba(99,102,24
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .formacao-grid { grid-template-columns: 1fr; }
-}
-
 @media (max-width: 640px) {
   .form-row { grid-template-columns: 1fr; }
   .tab-content { padding: 16px; }

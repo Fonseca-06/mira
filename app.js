@@ -7,16 +7,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON)
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
              'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 
-const ICMS_UF = {
-  AC:19, AL:20, AM:20, AP:18, BA:20.5, CE:20, DF:20, ES:17,
-  GO:19, MA:23, MG:18, MS:19, MT:17,  PA:19, PB:20, PE:20.5,
-  PI:22.5, PR:19.5, RJ:22, RN:20, RO:19.5, RR:20, RS:17,
-  SC:17, SE:20, SP:18, TO:20
-}
-
-// Sul + Sudeste rico (S/SE-rico para cálculo do interestadual 7%/12%)
-const SE_RICO = new Set(['MG','SP','RJ','PR','SC','RS'])
-
 let histChart = null
 let precosTodos = []
 let medidas = []
@@ -149,7 +139,7 @@ async function initApp() {
 }
 
 function populateUFSelects() {
-  const ids = ['comp-uf', 'cruz-uf', 'fp-uf', 'fc-uf', 'f-uf-origem', 'f-uf-destino']
+  const ids = ['comp-uf', 'cruz-uf', 'fp-uf', 'fc-uf']
   ids.forEach(id => {
     const el = document.getElementById(id)
     if (!el) return
@@ -1054,87 +1044,3 @@ document.getElementById('form-marca').addEventListener('submit', async e => {
   document.getElementById('modal-marca').classList.add('hidden')
   loadCatalogo()
 })
-
-// ─── FORMAÇÃO DE PREÇO ───────────────────────────────────────────────────────
-
-document.getElementById('btn-calcular').addEventListener('click', calcularPreco)
-
-function calcularPreco() {
-  const cenario   = document.getElementById('f-cenario').value
-  const tipoVenda = document.getElementById('f-tipo-venda').value
-  const importado = document.getElementById('f-importado').value === 'sim'
-  const ufOrigem  = document.getElementById('f-uf-origem').value
-  const ufDestino = document.getElementById('f-uf-destino').value
-  const custo     = parseFloat(document.getElementById('f-custo').value) || 0
-  const margem    = parseFloat(document.getElementById('f-margem').value) || 0
-  const despesas  = parseFloat(document.getElementById('f-despesas').value) || 0
-  const mva       = parseFloat(document.getElementById('f-mva').value) || 0
-
-  if (!custo || !ufOrigem || !ufDestino) {
-    toast('Preencha custo, UF origem e UF destino', 'error')
-    return
-  }
-
-  // RN-07: ICMS interestadual
-  let icmsInter
-  if (importado) {
-    icmsInter = 4
-  } else if (SE_RICO.has(ufOrigem) && !SE_RICO.has(ufDestino)) {
-    icmsInter = 7
-  } else {
-    icmsInter = 12
-  }
-
-  const icmsInterno = ICMS_UF[ufDestino] || 18
-
-  // RN-06: PIS/COFINS monofásico
-  const pisCofins = cenario === 'importador' ? 11.5 : 0
-
-  // RN-10: Markup divisor
-  const divisor = 1 - (icmsInter / 100) - (pisCofins / 100) - (despesas / 100) - (margem / 100)
-  if (divisor <= 0) { toast('Parâmetros inviáveis — divisor negativo', 'error'); return }
-  const precoMerc = custo / divisor
-
-  // RN-08: ICMS-ST
-  let icmsSTValor = 0
-  if (cenario === 'importador' && tipoVenda === 'contribuinte') {
-    const baseST = precoMerc * (1 + mva / 100)
-    const icmsProprioValor = precoMerc * (icmsInter / 100)
-    icmsSTValor = Math.max(0, baseST * (icmsInterno / 100) - icmsProprioValor)
-  }
-
-  // RN-09: DIFAL (mutuamente exclusivo da ICMS-ST)
-  let difalValor = 0
-  if (tipoVenda === 'consumidor' && ufOrigem !== ufDestino) {
-    difalValor = Math.max(0, precoMerc * ((icmsInterno - icmsInter) / 100))
-  }
-
-  const precoFinal    = precoMerc + icmsSTValor + difalValor
-  const lucro         = precoMerc - custo - (precoMerc * (despesas / 100))
-  const margemLiquida = (lucro / precoMerc) * 100
-  const markup        = ((precoMerc - custo) / custo) * 100
-
-  const brl  = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-  const perc = v => v.toFixed(2) + '%'
-
-  document.getElementById('resultado-content').innerHTML = `
-    <div class="result-row"><span class="result-label">Custo</span><span class="result-value">${brl(custo)}</span></div>
-    <div class="result-row"><span class="result-label">ICMS interestadual (${ufOrigem}→${ufDestino})</span><span class="result-value">${perc(icmsInter)}</span></div>
-    <div class="result-row"><span class="result-label">PIS/COFINS</span><span class="result-value">${perc(pisCofins)}</span></div>
-    <div class="result-row"><span class="result-label">Despesas</span><span class="result-value">${perc(despesas)}</span></div>
-    <div class="result-row"><span class="result-label">Margem desejada</span><span class="result-value">${perc(margem)}</span></div>
-    <div class="result-row highlight">
-      <span class="result-label">Preço da Mercadoria</span>
-      <span class="result-value">${brl(precoMerc)}</span>
-    </div>
-    ${icmsSTValor > 0 ? `<div class="result-row"><span class="result-label">ICMS-ST (MVA ${mva}%, alíq. ${ufDestino} ${icmsInterno}%)</span><span class="result-value">${brl(icmsSTValor)}</span></div>` : ''}
-    ${difalValor > 0  ? `<div class="result-row"><span class="result-label">DIFAL</span><span class="result-value">${brl(difalValor)}</span></div>` : ''}
-    <div class="result-row grand-total">
-      <span class="result-label">Preço Final</span>
-      <span class="result-value">${brl(precoFinal)}</span>
-    </div>
-    <div class="result-row" style="margin-top:12px"><span class="result-label">Lucro bruto</span><span class="result-value">${brl(lucro)}</span></div>
-    <div class="result-row"><span class="result-label">Margem líquida</span><span class="result-value">${perc(margemLiquida)}</span></div>
-    <div class="result-row"><span class="result-label">Markup</span><span class="result-value">${perc(markup)}</span></div>
-  `
-}

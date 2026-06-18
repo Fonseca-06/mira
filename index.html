@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mira — Inteligência Comercial</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -47,9 +47,6 @@
       </li>
       <li class="nav-item" data-tab="catalogo">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg> Catálogo
-      </li>
-      <li class="nav-item" data-tab="formacao">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg> Formação de Preço
       </li>
     </ul>
     <div class="sidebar-footer">
@@ -259,74 +256,6 @@
             <thead><tr><th>Marca</th><th>Segmento</th><th>Origem</th><th>Ações</th></tr></thead>
             <tbody id="marcas-tbody"></tbody>
           </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- FORMAÇÃO DE PREÇO -->
-    <section id="tab-formacao" class="tab-content">
-      <div class="page-header">
-        <h2>Formação de Preço</h2>
-      </div>
-      <div class="formacao-grid">
-        <div class="form-card">
-          <h3>Parâmetros</h3>
-          <div class="form-group">
-            <label>Cenário</label>
-            <select id="f-cenario" class="form-control">
-              <option value="importador">Importador (Substituto Tributário)</option>
-              <option value="revenda">Revenda (ST já retido)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tipo de Venda</label>
-            <select id="f-tipo-venda" class="form-control">
-              <option value="contribuinte">Para Contribuinte (ICMS-ST)</option>
-              <option value="consumidor">Para Consumidor Final (DIFAL)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Produto Importado?</label>
-            <select id="f-importado" class="form-control">
-              <option value="sim">Sim (ICMS interestadual 4%)</option>
-              <option value="nao">Não (regra geral 7%/12%)</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>UF Origem</label>
-              <select id="f-uf-origem" class="form-control"><option value="">-</option></select>
-            </div>
-            <div class="form-group">
-              <label>UF Destino</label>
-              <select id="f-uf-destino" class="form-control"><option value="">-</option></select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Custo (R$)</label>
-              <input type="number" id="f-custo" class="form-control" placeholder="0,00" step="0.01" min="0">
-            </div>
-            <div class="form-group">
-              <label>Margem (%)</label>
-              <input type="number" id="f-margem" class="form-control" placeholder="15" step="0.1">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Despesas (%)</label>
-              <input type="number" id="f-despesas" class="form-control" placeholder="0" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>MVA-ST (%)</label>
-              <input type="number" id="f-mva" class="form-control" placeholder="35" step="0.1">
-            </div>
-          </div>
-          <button class="btn-primary btn-full" id="btn-calcular">Calcular</button>
-        </div>
-        <div class="form-card" id="resultado-card">
-          <h3>Resultado</h3>
-          <div id="resultado-content" class="resultado-empty">Preencha os parâmetros e clique em Calcular</div>
         </div>
       </div>
     </section>
@@ -607,6 +536,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
