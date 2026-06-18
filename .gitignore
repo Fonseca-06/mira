@@ -1,0 +1,15 @@
+# Segredos / ambiente
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Dados locais (planilhas/CSV de origem não vão pro repo)
+*.xlsx
+*.csv

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mira — Inteligência Comercial</title>
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <h1>Mira</h1>
+    <p>Inteligência Comercial e de Preços</p>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="E-mail" required>
+      <input type="password" id="login-password" placeholder="Senha" required>
+      <button type="submit" id="login-btn">Entrar</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app hidden">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <span>Mira</span>
+    </div>
+    <ul class="sidebar-nav">
+      <li class="nav-item active" data-tab="comparativo">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M12 3v18"/></svg> Comparativo
+      </li>
+      <li class="nav-item" data-tab="cruzamento">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg> Cruzamento
+      </li>
+      <li class="nav-item" data-tab="precos">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg> Preços
+      </li>
+      <li class="nav-item" data-tab="cadastro">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Cadastro
+      </li>
+      <li class="nav-item" data-tab="historico">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Histórico
+      </li>
+      <li class="nav-item" data-tab="catalogo">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg> Catálogo
+      </li>
+      <li class="nav-item" data-tab="formacao">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg> Formação de Preço
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <span id="user-email" class="user-email"></span>
+      <button id="theme-toggle" class="btn-logout">Tema escuro</button>
+      <button id="logout-btn" class="btn-logout">Sair</button>
+    </div>
+  </nav>
+
+  <main class="main-content">
+
+    <!-- COMPARATIVO -->
+    <section id="tab-comparativo" class="tab-content active">
+      <div class="page-header">
+        <h2>Comparativo de Preços</h2>
+        <div class="header-actions">
+          <input type="text" id="comp-search" placeholder="Buscar medida..." class="search-input">
+          <select id="comp-uf" class="filter-select"><option value="">Todas as UFs</option></select>
+          <select id="comp-posicao" class="filter-select">
+            <option value="">Todas as posições</option>
+            <option value="Competitivo">Competitivo</option>
+            <option value="Acima">Acima</option>
+          </select>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Medida</th><th>UF</th><th>Nosso Preço</th>
+              <th>Menor Conc.</th><th>Médio Conc.</th><th>Maior Conc.</th>
+              <th>Gap</th><th>Posição</th><th>Data ref.</th>
+            </tr>
+          </thead>
+          <tbody id="comp-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CRUZAMENTO -->
+    <section id="tab-cruzamento" class="tab-content">
+      <div class="page-header">
+        <h2>Cruzamento de Preços</h2>
+        <div class="header-actions">
+          <button class="btn-secondary" id="cruz-importar">Importar CSV</button>
+          <button class="btn-secondary" id="cruz-limpar">Limpar</button>
+          <input type="file" id="cruz-file" accept=".csv" style="display:none">
+        </div>
+      </div>
+      <p style="color:var(--text-muted);margin:-8px 0 16px;font-size:13px">
+        Informe seus preços (medida + preço; UF opcional) ou importe um CSV com as colunas
+        <code>medida,preco</code> e, se quiser, <code>uf</code>. Sem UF, cruza com todos os estados.
+        O sistema mostra os concorrentes mais baratos, médios e mais caros — com a data de referência
+        mais recente. Nada é salvo: é só simulação.
+      </p>
+      <div class="form-card" style="margin-bottom:20px">
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group">
+            <label>Medida *</label>
+            <input type="text" id="cruz-medida" class="form-control" list="dl-medidas" placeholder="185/60 R15">
+          </div>
+          <div class="form-group">
+            <label>UF</label>
+            <select id="cruz-uf" class="form-control"><option value="">Todas as UFs</option></select>
+          </div>
+          <div class="form-group">
+            <label>Meu preço (R$) *</label>
+            <input type="number" id="cruz-preco" class="form-control" step="0.01" min="0" placeholder="0,00">
+          </div>
+          <div class="form-group" style="flex:0 0 auto">
+            <button class="btn-primary" id="cruz-add">Cruzar</button>
+          </div>
+        </div>
+      </div>
+      <div class="kpis" id="cruz-kpis"></div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Medida</th><th>UF</th><th>Meu Preço</th>
+              <th>Menor Conc.</th><th>Médio Conc.</th><th>Maior Conc.</th>
+              <th>Gap</th><th>Posição</th><th>Data ref.</th>
+            </tr>
+          </thead>
+          <tbody id="cruz-tbody">
+            <tr><td colspan="9" class="empty-state" style="padding:48px">Adicione um preço ou importe um CSV para cruzar</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PREÇOS -->
+    <section id="tab-precos" class="tab-content">
+      <div class="page-header">
+        <h2>Preços</h2>
+        <div class="header-actions">
+          <input type="text" id="preco-search" placeholder="Buscar..." class="search-input">
+          <select id="preco-origem" class="filter-select">
+            <option value="">Todos</option>
+            <option value="Meu">Meu</option>
+            <option value="Concorrente">Concorrente</option>
+          </select>
+          <button class="btn-secondary" id="btn-exportar-csv">Exportar CSV</button>
+          <button class="btn-secondary" id="btn-importar-csv">Importar CSV</button>
+          <button class="btn-primary" id="btn-novo-preco">+ Novo Preço</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Origem</th><th>Medida</th><th>Marca</th><th>Fornecedor</th>
+              <th>UF</th><th>Preço</th><th>Fonte</th><th>Data</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="precos-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CADASTRO -->
+    <section id="tab-cadastro" class="tab-content">
+      <div class="page-header">
+        <h2>Cadastro</h2>
+        <div class="header-actions">
+          <input type="text" id="cad-search" placeholder="Buscar por nome, CNPJ ou cidade..." class="search-input" style="width:320px">
+          <select id="cad-classificacao" class="filter-select">
+            <option value="">Todas as classificações</option>
+            <option value="Cliente">Cliente</option>
+            <option value="Lead">Lead</option>
+            <option value="Fornecedor Importador">Fornecedor Importador</option>
+            <option value="Fornecedor Nacional">Fornecedor Nacional</option>
+            <option value="Concorrente">Concorrente</option>
+          </select>
+          <button class="btn-primary" id="btn-novo-cadastro">+ Novo Cadastro</button>
+        </div>
+      </div>
+      <div id="cad-empty" class="empty-state">Digite para buscar na base de cadastros</div>
+      <div class="table-wrapper" id="cad-table-wrapper" style="display:none">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Razão Social</th><th>CNPJ</th><th>Classificação</th>
+              <th>Cidade/UF</th><th>Telefone</th><th>Status</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="cad-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="tab-historico" class="tab-content">
+      <div class="page-header">
+        <h2>Histórico de Preços</h2>
+        <div class="header-actions">
+          <select id="hist-medida" class="filter-select" style="width:220px">
+            <option value="">Selecione uma medida...</option>
+          </select>
+        </div>
+      </div>
+      <div id="hist-empty" class="empty-state">Selecione uma medida para ver o histórico</div>
+      <div id="hist-content" style="display:none">
+        <div class="chart-wrapper">
+          <canvas id="hist-chart"></canvas>
+        </div>
+        <div class="table-wrapper" style="margin-top:24px">
+          <table class="data-table">
+            <thead>
+              <tr><th>Data</th><th>Origem</th><th>Marca</th><th>Fornecedor</th><th>Preço</th><th>Gap vs Menor</th></tr>
+            </thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATÁLOGO -->
+    <section id="tab-catalogo" class="tab-content">
+      <div class="page-header">
+        <h2>Catálogo de Referência</h2>
+      </div>
+      <div class="catalog-tabs">
+        <button class="cat-tab active" data-cat="medidas">Medidas</button>
+        <button class="cat-tab" data-cat="marcas">Marcas</button>
+      </div>
+      <div id="cat-medidas">
+        <div class="sub-header">
+          <input type="text" id="med-search" placeholder="Buscar medida..." class="search-input">
+          <button class="btn-primary" id="btn-nova-medida">+ Nova Medida</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Medida</th><th>Categoria</th><th>Aro</th><th>Ações</th></tr></thead>
+            <tbody id="medidas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="cat-marcas" style="display:none">
+        <div class="sub-header">
+          <input type="text" id="marc-search" placeholder="Buscar marca..." class="search-input">
+          <button class="btn-primary" id="btn-nova-marca">+ Nova Marca</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Marca</th><th>Segmento</th><th>Origem</th><th>Ações</th></tr></thead>
+            <tbody id="marcas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORMAÇÃO DE PREÇO -->
+    <section id="tab-formacao" class="tab-content">
+      <div class="page-header">
+        <h2>Formação de Preço</h2>
+      </div>
+      <div class="formacao-grid">
+        <div class="form-card">
+          <h3>Parâmetros</h3>
+          <div class="form-group">
+            <label>Cenário</label>
+            <select id="f-cenario" class="form-control">
+              <option value="importador">Importador (Substituto Tributário)</option>
+              <option value="revenda">Revenda (ST já retido)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo de Venda</label>
+            <select id="f-tipo-venda" class="form-control">
+              <option value="contribuinte">Para Contribuinte (ICMS-ST)</option>
+              <option value="consumidor">Para Consumidor Final (DIFAL)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Produto Importado?</label>
+            <select id="f-importado" class="form-control">
+              <option value="sim">Sim (ICMS interestadual 4%)</option>
+              <option value="nao">Não (regra geral 7%/12%)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>UF Origem</label>
+              <select id="f-uf-origem" class="form-control"><option value="">-</option></select>
+            </div>
+            <div class="form-group">
+              <label>UF Destino</label>
+              <select id="f-uf-destino" class="form-control"><option value="">-</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Custo (R$)</label>
+              <input type="number" id="f-custo" class="form-control" placeholder="0,00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+              <label>Margem (%)</label>
+              <input type="number" id="f-margem" class="form-control" placeholder="15" step="0.1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Despesas (%)</label>
+              <input type="number" id="f-despesas" class="form-control" placeholder="0" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>MVA-ST (%)</label>
+              <input type="number" id="f-mva" class="form-control" placeholder="35" step="0.1">
+            </div>
+          </div>
+          <button class="btn-primary btn-full" id="btn-calcular">Calcular</button>
+        </div>
+        <div class="form-card" id="resultado-card">
+          <h3>Resultado</h3>
+          <div id="resultado-content" class="resultado-empty">Preencha os parâmetros e clique em Calcular</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL PREÇO -->
+<div id="modal-preco" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-preco-title">Novo Preço</h3>
+      <button class="modal-close" data-modal="modal-preco">×</button>
+    </div>
+    <form id="form-preco">
+      <input type="hidden" id="fp-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Origem *</label>
+          <select id="fp-origem" class="form-control" required>
+            <option value="Meu">Meu</option>
+            <option value="Concorrente">Concorrente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Medida *</label>
+          <input type="text" id="fp-medida" class="form-control" list="dl-medidas" required placeholder="185/60 R15">
+          <datalist id="dl-medidas"></datalist>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marca</label>
+          <input type="text" id="fp-marca" class="form-control" list="dl-marcas" placeholder="Marca">
+          <datalist id="dl-marcas"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Descrição</label>
+          <input type="text" id="fp-descricao" class="form-control" placeholder="Modelo/descrição">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fornecedor</label>
+          <input type="text" id="fp-fornecedor" class="form-control" placeholder="Fornecedor/concorrente">
+        </div>
+        <div class="form-group">
+          <label>UF</label>
+          <select id="fp-uf" class="form-control"><option value="">-</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preço (R$) *</label>
+          <input type="number" id="fp-preco" class="form-control" step="0.01" required placeholder="0,00" min="0">
+        </div>
+        <div class="form-group">
+          <label>Data *</label>
+          <input type="date" id="fp-data" class="form-control" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fonte</label>
+          <select id="fp-fonte" class="form-control">
+            <option value="">-</option>
+            <option>Lista de Preço</option>
+            <option>NF Concorrente</option>
+            <option>Histórico Venda</option>
+            <option>Cotação</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <input type="text" id="fp-categoria" class="form-control" placeholder="Carro, Carga...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="fp-obs" class="form-control" rows="2" placeholder="Obs..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-modal="modal-preco">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO -->
+<div id="modal-cadastro" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-cad-title">Novo Cadastro</h3>
+      <button class="modal-close" data-modal="modal-cadastro">×</button>
+    </div>
+    <form id="form-cadastro">
+      <input type="hidden" id="fc-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Razão Social *</label>
+          <input type="text" id="fc-razao" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>CNPJ/CPF</label>
+          <input type="text" id="fc-cnpj" class="form-control" placeholder="00.000.000/0000-00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Classificação</label>
+          <select id="fc-classificacao" class="form-control">
+            <option value="">-</option>
+            <option>Cliente</option>
+            <option>Lead</option>
+            <option>Fornecedor Importador</option>
+            <option>Fornecedor Nacional</option>
+            <option>Concorrente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="fc-status" class="form-control">
+            <option>Ativo</option>
+            <option>Prospect</option>
+            <option>Inativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cidade</label>
+          <input type="text" id="fc-cidade" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>UF</label>
+          <select id="fc-uf" class="form-control"><option value="">-</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="fc-telefone" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="fc-email" class="form-control">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>CNAE</label>
+          <input type="text" id="fc-cnae" class="form-control" placeholder="00.00-0/00">
+        </div>
+        <div class="form-group">
+          <label>Limite de Crédito (R$)</label>
+          <input type="number" id="fc-limite" class="form-control" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="fc-obs" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-modal="modal-cadastro">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL MEDIDA -->
+<div id="modal-medida" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="modal-med-title">Nova Medida</h3>
+      <button class="modal-close" data-modal="modal-medida">×</button>
+    </div>
+    <form id="form-medida">
+      <input type="hidden" id="fm-id">
+      <div class="form-group">
+        <label>Medida * (ex: 185/60 R15)</label>
+        <input type="text" id="fm-medida" class="form-control" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoria</label>
+          <input type="text" id="fm-categoria" class="form-control" placeholder="Carro, Carga...">
+        </div>
+        <div class="form-group">
+          <label>Aro</label>
+          <input type="text" id="fm-aro" class="form-control" placeholder="15, 16...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-modal="modal-medida">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL MARCA -->
+<div id="modal-marca" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="modal-marc-title">Nova Marca</h3>
+      <button class="modal-close" data-modal="modal-marca">×</button>
+    </div>
+    <form id="form-marca">
+      <input type="hidden" id="fmrc-id">
+      <div class="form-group">
+        <label>Marca *</label>
+        <input type="text" id="fmrc-marca" class="form-control" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Segmento</label>
+          <select id="fmrc-segmento" class="form-control">
+            <option value="">-</option>
+            <option>IMP LOW</option>
+            <option>IMP 2º TIER</option>
+            <option>IMP PREMIUM</option>
+            <option>Nacional</option>
+            <option>Premium</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Origem da Marca</label>
+          <select id="fmrc-origem" class="form-control">
+            <option value="">-</option>
+            <option>Nossa</option>
+            <option>Importado</option>
+            <option>Nacional</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-modal="modal-marca">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL CSV -->
+<div id="modal-csv" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-header">
+      <h3>Importar Preços via CSV</h3>
+      <button class="modal-close" data-modal="modal-csv">×</button>
+    </div>
+    <div class="form-group">
+      <label>Colunas obrigatórias: <code>origem</code>, <code>medida</code>, <code>preco</code>, <code>data</code></label>
+      <code class="code-hint">origem,medida,marca,fornecedor,uf,preco,fonte,data,obs</code>
+    </div>
+    <div class="form-group">
+      <label>Arquivo CSV</label>
+      <input type="file" id="csv-file" accept=".csv" class="form-control">
+    </div>
+    <div id="csv-preview" style="display:none">
+      <p id="csv-count" style="color:var(--success);font-size:13px;margin-top:8px"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" data-modal="modal-csv">Cancelar</button>
+      <button type="button" class="btn-primary" id="btn-confirmar-csv" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="app.js?v=8"></script>
+</body>
+</html>
