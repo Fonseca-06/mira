@@ -267,6 +267,24 @@ function medidaCanonica(m) {
   return normMedida(m).replace(/R(\d)/g, ' R$1')
 }
 
+// Interpreta a medida digitada de formas variadas (185 60 15, 185/60-15, 185.60.15…)
+// e devolve a chave normalizada, "encaixando" numa medida conhecida quando possível.
+function parseMedida(input, indice) {
+  const up = (input || '').toUpperCase()
+  const direct = normMedida(up)
+  if (indice && indice[direct]) return direct
+  const nums = up.match(/\d+\.?\d*/g) || []
+  const suf  = (up.match(/(LT|C)\s*$/) || [''])[0].trim()
+  if (nums.length >= 3) {
+    const comSuf = normMedida(`${nums[0]}/${nums[1]}R${nums[2]}${suf}`)
+    if (indice && indice[comSuf]) return comSuf
+    const semSuf = normMedida(`${nums[0]}/${nums[1]}R${nums[2]}`)
+    if (indice && indice[semSuf]) return semSuf
+    return comSuf || semSuf
+  }
+  return direct
+}
+
 // Título (primeira maiúscula por palavra) — padrão de marcas/empresas
 function tituloCase(s) {
   return (s || '').trim().toLowerCase().replace(/(^|[\s\-/(.])([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase())
@@ -415,7 +433,8 @@ function buildConcIndex() {
 // uf vazio = cruza com todos os estados
 function cruzarLinha(medida, uf, meuPreco) {
   if (!cruzIndex) cruzIndex = buildConcIndex()
-  let conc = cruzIndex[normMedida(medida)] || []
+  const chave = parseMedida(medida, cruzIndex)
+  let conc = cruzIndex[chave] || []
   if (uf) conc = conc.filter(c => c.uf === uf)
 
   // detalhe preço a preço, do mais barato ao mais caro, com gap do meu preço vs cada um
@@ -439,7 +458,7 @@ function cruzarLinha(medida, uf, meuPreco) {
   const posicao = calcPosicao(meuPreco, menor)
   const gap    = meuPreco && menor ? ((meuPreco - menor) / menor * 100).toFixed(1) : null
   const gapMedio = meuPreco && medio ? ((meuPreco - medio) / medio * 100).toFixed(1) : null
-  return { medida, uf: uf || 'Todas', meuPreco, menor, medio, maior, gapMedio, dataRef, qtd: conc.length, posicao, gap, detalhes }
+  return { medida: medidaCanonica(chave), uf: uf || 'Todas', meuPreco, menor, medio, maior, gapMedio, dataRef, qtd: conc.length, posicao, gap, detalhes }
 }
 
 function renderCruz() {

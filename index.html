@@ -101,13 +101,14 @@
         Informe seus preços (medida + preço; UF opcional) ou importe um CSV com as colunas
         <code>medida,preco</code> e, se quiser, <code>uf</code>. Sem UF, cruza com todos os estados.
         O sistema mostra os concorrentes mais baratos, médios e mais caros — com a data de referência
-        mais recente. Nada é salvo: é só simulação.
+        mais recente. Nada é salvo: é só simulação. A medida aceita formatos variados
+        (<code>185/60 R15</code>, <code>185 60 15</code>, <code>185-60-15</code>).
       </p>
       <div class="form-card" style="margin-bottom:20px">
         <div class="form-row" style="align-items:flex-end">
           <div class="form-group">
             <label>Medida *</label>
-            <input type="text" id="cruz-medida" class="form-control" list="dl-medidas" placeholder="185/60 R15">
+            <input type="text" id="cruz-medida" class="form-control" list="dl-medidas" placeholder="185/60 R15  ·  185 60 15">
           </div>
           <div class="form-group">
             <label>UF</label>
@@ -536,6 +537,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
