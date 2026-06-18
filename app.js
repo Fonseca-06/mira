@@ -262,6 +262,16 @@ function normMedida(m) {
   return (m || '').toUpperCase().replace(/\s+/g, '')
 }
 
+// Forma canônica de exibição/gravação: "185/60 R15" (espaço antes do R)
+function medidaCanonica(m) {
+  return normMedida(m).replace(/R(\d)/g, ' R$1')
+}
+
+// Título (primeira maiúscula por palavra) — padrão de marcas/empresas
+function tituloCase(s) {
+  return (s || '').trim().toLowerCase().replace(/(^|[\s\-/(.])([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase())
+}
+
 // Mais recente vence; empate de data → prioriza Lista de Preço (RN-01)
 function meuMaisRelevante(p, atual) {
   if (!atual) return true
@@ -585,8 +595,8 @@ document.getElementById('form-preco').addEventListener('submit', async e => {
   const id = document.getElementById('fp-id').value
   const payload = {
     origem:     document.getElementById('fp-origem').value,
-    medida:     document.getElementById('fp-medida').value.trim(),
-    marca:      document.getElementById('fp-marca').value.trim() || null,
+    medida:     medidaCanonica(document.getElementById('fp-medida').value),
+    marca:      tituloCase(document.getElementById('fp-marca').value) || null,
     descricao:  document.getElementById('fp-descricao').value.trim() || null,
     fornecedor: document.getElementById('fp-fornecedor').value.trim() || null,
     uf:         document.getElementById('fp-uf').value || null,
@@ -643,8 +653,8 @@ document.getElementById('csv-file').addEventListener('change', e => {
       headers.forEach((h, i) => row[h] = vals[i] || null)
       return {
         origem:     row.origem || 'Concorrente',
-        medida:     row.medida,
-        marca:      row.marca || null,
+        medida:     medidaCanonica(row.medida),
+        marca:      row.marca ? tituloCase(row.marca) : null,
         fornecedor: row.fornecedor || null,
         uf:         row.uf || null,
         preco:      parseFloat(row.preco) || null,
@@ -989,7 +999,7 @@ document.getElementById('form-medida').addEventListener('submit', async e => {
   e.preventDefault()
   const id = document.getElementById('fm-id').value
   const payload = {
-    medida:    document.getElementById('fm-medida').value.trim(),
+    medida:    medidaCanonica(document.getElementById('fm-medida').value),
     categoria: document.getElementById('fm-categoria').value.trim() || null,
     aro:       document.getElementById('fm-aro').value.trim() || null,
   }
@@ -1032,7 +1042,7 @@ document.getElementById('form-marca').addEventListener('submit', async e => {
   e.preventDefault()
   const id = document.getElementById('fmrc-id').value
   const payload = {
-    marca:        document.getElementById('fmrc-marca').value.trim(),
+    marca:        tituloCase(document.getElementById('fmrc-marca').value),
     segmento:     document.getElementById('fmrc-segmento').value || null,
     origem_marca: document.getElementById('fmrc-origem').value || null,
   }
