@@ -219,9 +219,23 @@ function toggleDetail(domId) {
 
 // ─── COMPARATIVO ─────────────────────────────────────────────────────────────
 
+// Supabase limita 1000 linhas por requisição; pagina pra trazer toda a base
+async function fetchAllPrecos() {
+  const tam = 1000
+  let de = 0, todos = []
+  while (true) {
+    const { data, error } = await db.from('precos').select('*')
+      .order('data', { ascending: false }).range(de, de + tam - 1)
+    if (error || !data || !data.length) break
+    todos = todos.concat(data)
+    if (data.length < tam) break
+    de += tam
+  }
+  return todos
+}
+
 async function loadComparativo() {
-  const { data } = await db.from('precos').select('*').order('data', { ascending: false })
-  precosTodos = data || []
+  precosTodos = await fetchAllPrecos()
   cruzIndex = null
   renderKPIs()
   renderComparativo()
@@ -839,9 +853,8 @@ document.getElementById('form-cadastro').addEventListener('submit', async e => {
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
 
 async function loadHistMedidas() {
-  const { data } = await db.from('precos').select('medida').order('medida')
-  if (!data) return
-  const unicas = [...new Set(data.map(d => d.medida))].sort()
+  if (!precosTodos.length) precosTodos = await fetchAllPrecos()
+  const unicas = [...new Set(precosTodos.map(d => d.medida).filter(Boolean))].sort()
   const sel = document.getElementById('hist-medida')
   sel.innerHTML = '<option value="">Selecione uma medida...</option>'
   unicas.forEach(m => {
