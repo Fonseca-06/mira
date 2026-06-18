@@ -15,6 +15,7 @@ let marcas = []
 let precosRaw = []
 let csvRows = []
 let cadTimeout = null
+let precoTimeout = null
 let cruzIndex = null
 let cruzResultados = []
 
@@ -578,23 +579,23 @@ document.getElementById('cruz-file').addEventListener('change', e => {
 
 // ─── PREÇOS ──────────────────────────────────────────────────────────────────
 
+// Busca no banco inteiro (não só nos carregados): filtra por medida/marca/fornecedor/descrição + origem
 async function loadPrecos() {
-  const { data } = await db.from('precos').select('*').order('created_at', { ascending: false }).limit(500)
+  const termo  = document.getElementById('preco-search').value.trim().replace(/,/g, ' ')
+  const origem = document.getElementById('preco-origem').value
+  let query = db.from('precos').select('*').order('created_at', { ascending: false }).limit(500)
+  if (termo)  query = query.or(`medida.ilike.%${termo}%,marca.ilike.%${termo}%,fornecedor.ilike.%${termo}%,descricao.ilike.%${termo}%`)
+  if (origem) query = query.eq('origem', origem)
+  const { data } = await query
   precosRaw = data || []
   renderPrecos()
 }
 
 function renderPrecos() {
-  const q      = document.getElementById('preco-search').value.toLowerCase()
-  const origem = document.getElementById('preco-origem').value
-  let dados = precosRaw
-  if (q)      dados = dados.filter(d => `${d.medida}${d.marca}${d.fornecedor}`.toLowerCase().includes(q))
-  if (origem) dados = dados.filter(d => d.origem === origem)
-
   const brl = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
-  document.getElementById('precos-tbody').innerHTML = dados.length
-    ? dados.map(p => `
+  document.getElementById('precos-tbody').innerHTML = precosRaw.length
+    ? precosRaw.map(p => `
       <tr>
         <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${p.origem}</span></td>
         <td><strong>${p.medida}</strong></td>
@@ -612,8 +613,11 @@ function renderPrecos() {
     : '<tr><td colspan="9" class="empty-state" style="padding:48px">Nenhum registro</td></tr>'
 }
 
-document.getElementById('preco-search').addEventListener('input', renderPrecos)
-document.getElementById('preco-origem').addEventListener('change', renderPrecos)
+document.getElementById('preco-search').addEventListener('input', () => {
+  clearTimeout(precoTimeout)
+  precoTimeout = setTimeout(loadPrecos, 350)
+})
+document.getElementById('preco-origem').addEventListener('change', loadPrecos)
 
 document.getElementById('btn-novo-preco').addEventListener('click', () => {
   document.getElementById('form-preco').reset()
