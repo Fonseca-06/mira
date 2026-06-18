@@ -274,16 +274,17 @@ function parseMedida(input, indice) {
   const up = (input || '').toUpperCase()
   const direct = normMedida(up)
   if (indice && indice[direct]) return direct
-  const nums = up.match(/\d+\.?\d*/g) || []
-  const suf  = (up.match(/(LT|C)\s*$/) || [''])[0].trim()
-  if (nums.length >= 3) {
-    const comSuf = normMedida(`${nums[0]}/${nums[1]}R${nums[2]}${suf}`)
-    if (indice && indice[comSuf]) return comSuf
-    const semSuf = normMedida(`${nums[0]}/${nums[1]}R${nums[2]}`)
-    if (indice && indice[semSuf]) return semSuf
-    return comSuf || semSuf
+  const suf = (up.match(/(LT|C)\s*$/) || [''])[0].trim()
+  // tenta separar os 3 números de dois jeitos: com decimal (10.00) e só inteiros (separados por . - / espaço)
+  const candidatos = []
+  for (const nums of [up.match(/\d+\.?\d+|\d+/g), up.match(/\d+/g)]) {
+    if (nums && nums.length >= 3) {
+      candidatos.push(normMedida(`${nums[0]}/${nums[1]}R${nums[2]}${suf}`))
+      candidatos.push(normMedida(`${nums[0]}/${nums[1]}R${nums[2]}`))
+    }
   }
-  return direct
+  for (const c of candidatos) if (indice && indice[c]) return c
+  return candidatos[0] || direct
 }
 
 // Título (primeira maiúscula por palavra) — padrão de marcas/empresas
