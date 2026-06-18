@@ -219,13 +219,14 @@ function toggleDetail(domId) {
 
 // ─── COMPARATIVO ─────────────────────────────────────────────────────────────
 
-// Supabase limita 1000 linhas por requisição; pagina pra trazer toda a base
-async function fetchAllPrecos() {
+// Supabase limita 1000 linhas/requisição; pagina aplicando um filtro opcional
+async function fetchPaginado(aplicaFiltro) {
   const tam = 1000
   let de = 0, todos = []
   while (true) {
-    const { data, error } = await db.from('precos').select('*')
-      .order('data', { ascending: false }).range(de, de + tam - 1)
+    let q = db.from('precos').select('*')
+    if (aplicaFiltro) q = aplicaFiltro(q)
+    const { data, error } = await q.order('data', { ascending: false }).range(de, de + tam - 1)
     if (error || !data || !data.length) break
     todos = todos.concat(data)
     if (data.length < tam) break
@@ -234,43 +235,51 @@ async function fetchAllPrecos() {
   return todos
 }
 
+// Carrega só o necessário pra comparação: todos os concorrentes + meus preços
+// nas mesmas medidas/UFs (em vez de carregar a base inteira, ~9k linhas)
 async function loadComparativo() {
-  precosTodos = await fetchAllPrecos()
+  const concs   = await fetchPaginado(q => q.eq('origem', 'Concorrente'))
+  const medidas = [...new Set(concs.map(c => c.medida).filter(Boolean))]
+  const ufs     = [...new Set(concs.map(c => c.uf).filter(Boolean))]
+  const meus = (medidas.length && ufs.length)
+    ? await fetchPaginado(q => q.eq('origem', 'Meu').in('medida', medidas).in('uf', ufs))
+    : []
+  precosTodos = concs.concat(meus)
   cruzIndex = null
   renderKPIs()
   renderComparativo()
 }
 
-function renderKPIs() {
-  const medSet = new Set(precosTodos.map(p => p.medida))
-  const meus = precosTodos.filter(p => p.origem === 'Meu').length
-  const conc = precosTodos.filter(p => p.origem === 'Concorrente').length
+// Conta no banco (não na amostra carregada) e renderiza de uma vez só (sem corrida)
+async function renderKPIs() {
+  const contar = (tabela, filtro) => {
+    let q = db.from(tabela).select('*', { count: 'exact', head: true })
+    if (filtro) q = filtro(q)
+    return q.then(({ count }) => count || 0)
+  }
+  const [registros, medidas, meus, conc, cadastros] = await Promise.all([
+    contar('precos'),
+    contar('ref_medidas'),
+    contar('precos', q => q.eq('origem', 'Meu')),
+    contar('precos', q => q.eq('origem', 'Concorrente')),
+    contar('cadastro'),
+  ])
 
   const kpis = [
-    { label: 'Registros',  value: precosTodos.length },
-    { label: 'Medidas',    value: medSet.size },
-    { label: 'Meus Preços', value: meus },
+    { label: 'Registros',    value: registros },
+    { label: 'Medidas',      value: medidas },
+    { label: 'Meus Preços',  value: meus },
     { label: 'Concorrência', value: conc },
-    { label: 'Comparações', value: buildComparativoData().length },
+    { label: 'Comparações',  value: buildComparativoData().length },
+    { label: 'Cadastros',    value: cadastros },
   ]
 
-  const el = document.getElementById('kpis')
-  el.innerHTML = kpis.map(k => `
+  document.getElementById('kpis').innerHTML = kpis.map(k => `
     <div class="kpi-card">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value.toLocaleString('pt-BR')}</div>
     </div>
   `).join('')
-
-  db.from('cadastro').select('id', { count: 'exact', head: true }).then(({ count }) => {
-    if (count !== null) {
-      el.innerHTML += `
-        <div class="kpi-card">
-          <div class="kpi-label">Cadastros</div>
-          <div class="kpi-value">${count.toLocaleString('pt-BR')}</div>
-        </div>`
-    }
-  })
 }
 
 function normMedida(m) {
@@ -853,8 +862,8 @@ document.getElementById('form-cadastro').addEventListener('submit', async e => {
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
 
 async function loadHistMedidas() {
-  if (!precosTodos.length) precosTodos = await fetchAllPrecos()
-  const unicas = [...new Set(precosTodos.map(d => d.medida).filter(Boolean))].sort()
+  const { data } = await db.from('ref_medidas').select('medida').order('medida')
+  const unicas = [...new Set((data || []).map(d => d.medida).filter(Boolean))].sort()
   const sel = document.getElementById('hist-medida')
   sel.innerHTML = '<option value="">Selecione uma medida...</option>'
   unicas.forEach(m => {
