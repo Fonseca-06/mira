@@ -205,9 +205,11 @@
       <div class="page-header">
         <h2>Histórico de Preços</h2>
         <div class="header-actions">
-          <select id="hist-medida" class="filter-select" style="width:220px">
+          <select id="hist-medida" class="filter-select" style="width:200px">
             <option value="">Selecione uma medida...</option>
           </select>
+          <select id="hist-fornecedor" class="filter-select"><option value="">Todas as empresas</option></select>
+          <select id="hist-marca" class="filter-select"><option value="">Todas as marcas</option></select>
         </div>
       </div>
       <div id="hist-empty" class="empty-state">Selecione uma medida para ver o histórico</div>
@@ -537,6 +539,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

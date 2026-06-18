@@ -8,6 +8,7 @@ const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
              'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 
 let histChart = null
+let histRows = []
 let precosTodos = []
 let medidas = []
 let marcas = []
@@ -852,26 +853,56 @@ async function loadHistMedidas() {
 document.getElementById('hist-medida').addEventListener('change', async e => {
   const medida = e.target.value
   if (!medida) {
+    histRows = []
+    document.getElementById('hist-empty').textContent = 'Selecione uma medida para ver o histórico'
     document.getElementById('hist-empty').style.display = 'block'
     document.getElementById('hist-content').style.display = 'none'
     return
   }
 
   const { data } = await db.from('precos').select('*').eq('medida', medida).order('data')
-  if (!data?.length) return
+  histRows = data || []
 
-  document.getElementById('hist-empty').style.display = 'none'
+  // popula filtros de empresa e marca com o que existe nessa medida
+  const fornecedores = [...new Set(histRows.map(p => p.fornecedor).filter(Boolean))].sort()
+  const marcas       = [...new Set(histRows.map(p => p.marca).filter(Boolean))].sort()
+  const fillSel = (id, vazio, vals) => {
+    document.getElementById(id).innerHTML =
+      `<option value="">${vazio}</option>` + vals.map(v => `<option>${v}</option>`).join('')
+  }
+  fillSel('hist-fornecedor', 'Todas as empresas', fornecedores)
+  fillSel('hist-marca', 'Todas as marcas', marcas)
+
+  renderHist()
+})
+
+document.getElementById('hist-fornecedor').addEventListener('change', renderHist)
+document.getElementById('hist-marca').addEventListener('change', renderHist)
+
+function renderHist() {
+  const fornecedor = document.getElementById('hist-fornecedor').value
+  const marca      = document.getElementById('hist-marca').value
+  let rows = histRows
+  if (fornecedor) rows = rows.filter(p => p.fornecedor === fornecedor)
+  if (marca)      rows = rows.filter(p => p.marca === marca)
+
+  const empty = document.getElementById('hist-empty')
+  if (!rows.length) {
+    empty.textContent = histRows.length ? 'Nenhum preço com esses filtros' : 'Selecione uma medida para ver o histórico'
+    empty.style.display = 'block'
+    document.getElementById('hist-content').style.display = 'none'
+    return
+  }
+  empty.style.display = 'none'
   document.getElementById('hist-content').style.display = 'block'
 
-  // Agrupar por data para o gráfico
+  // gráfico: por data, nosso menor preço vs menor concorrente (dentro do filtro)
   const dateMap = {}
-  data.forEach(p => {
+  rows.forEach(p => {
     if (!dateMap[p.data]) dateMap[p.data] = { meu: null, menorConc: null }
     const pr = Number(p.preco)
-    if (p.origem === 'Meu' && (!dateMap[p.data].meu || pr < dateMap[p.data].meu))
-      dateMap[p.data].meu = pr
-    if (p.origem === 'Concorrente' && (!dateMap[p.data].menorConc || pr < dateMap[p.data].menorConc))
-      dateMap[p.data].menorConc = pr
+    if (p.origem === 'Meu' && (dateMap[p.data].meu == null || pr < dateMap[p.data].meu)) dateMap[p.data].meu = pr
+    if (p.origem === 'Concorrente' && (dateMap[p.data].menorConc == null || pr < dateMap[p.data].menorConc)) dateMap[p.data].menorConc = pr
   })
 
   const labels  = Object.keys(dateMap).sort()
@@ -887,7 +918,7 @@ document.getElementById('hist-medida').addEventListener('change', async e => {
   histChart = new Chart(document.getElementById('hist-chart').getContext('2d'), {
     type: 'line',
     data: {
-      labels,
+      labels: labels.map(fmtData),
       datasets: [
         { label: 'Nosso Preço',        data: meuData,  borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', tension: 0.3, pointRadius: 4, fill: false, spanGaps: true },
         { label: 'Menor Concorrente',  data: concData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)',  tension: 0.3, pointRadius: 4, fill: false, spanGaps: true }
@@ -914,30 +945,32 @@ document.getElementById('hist-medida').addEventListener('change', async e => {
     }
   })
 
-  // Tabela
+  // tabela: menor concorrente por data (dentro do filtro), ordenada por data desc
   const menorPorData = {}
-  data.filter(p => p.origem === 'Concorrente').forEach(p => {
+  rows.filter(p => p.origem === 'Concorrente').forEach(p => {
     const pr = Number(p.preco)
-    if (!menorPorData[p.data] || pr < menorPorData[p.data]) menorPorData[p.data] = pr
+    if (menorPorData[p.data] == null || pr < menorPorData[p.data]) menorPorData[p.data] = pr
   })
 
   const brl = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
-  document.getElementById('hist-tbody').innerHTML = [...data].reverse().map(p => {
-    const menor = menorPorData[p.data]
-    const gap = p.origem === 'Meu' && menor
-      ? (((Number(p.preco) - menor) / menor) * 100).toFixed(1) + '%'
-      : '-'
-    return `<tr>
-      <td>${p.data}</td>
-      <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${p.origem}</span></td>
-      <td>${p.marca || '-'}</td>
-      <td>${p.fornecedor || '-'}</td>
-      <td>${brl(p.preco)}</td>
-      <td>${gap}</td>
-    </tr>`
-  }).join('')
-})
+  document.getElementById('hist-tbody').innerHTML = [...rows]
+    .sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0))
+    .map(p => {
+      const menor = menorPorData[p.data]
+      const gap = p.origem === 'Meu' && menor
+        ? (((Number(p.preco) - menor) / menor) * 100).toFixed(1) + '%'
+        : '-'
+      return `<tr>
+        <td>${fmtData(p.data)}</td>
+        <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${p.origem}</span></td>
+        <td>${p.marca || '-'}</td>
+        <td>${p.fornecedor || '-'}</td>
+        <td>${brl(p.preco)}</td>
+        <td>${gap}</td>
+      </tr>`
+    }).join('')
+}
 
 // ─── CATÁLOGO ────────────────────────────────────────────────────────────────
 
