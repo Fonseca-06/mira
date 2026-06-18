@@ -272,6 +272,23 @@ function tituloCase(s) {
   return (s || '').trim().toLowerCase().replace(/(^|[\s\-/(.])([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase())
 }
 
+// Título preservando siglas de empresa (LTDA/ME...) e minúsculas em de/da/do/e
+function smartTitle(s) {
+  return tituloCase(s)
+    .replace(/\b(Ltda|Me|Epp|Eireli|Mei|Cia)\b/g, m => m.toUpperCase())
+    .replace(/\b(De|Da|Do|Dos|Das|E)\b/g, m => m.toLowerCase())
+}
+
+// Telefone BR: (DD) 9XXXX-XXXX (celular) / (DD) XXXX-XXXX (fixo); adiciona 9 em celular sem o 9
+function formatTelefone(v) {
+  let d = (v || '').replace(/\D/g, '').replace(/^0+/, '')
+  if (d.length >= 11) d = d.slice(0, 11)
+  else if (d.length === 10 && '6789'.includes(d[2])) d = d.slice(0, 2) + '9' + d.slice(2)
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return (v || '').trim()
+}
+
 // Mais recente vence; empate de data → prioriza Lista de Preço (RN-01)
 function meuMaisRelevante(p, atual) {
   if (!atual) return true
@@ -720,7 +737,7 @@ async function searchCadastro() {
         <td>${c.cnpj || '-'}</td>
         <td>${c.classificacao ? badgeClassificacao(c.classificacao) : '-'}</td>
         <td>${[c.cidade, c.uf].filter(Boolean).join('/') || '-'}</td>
-        <td>${c.telefone || '-'}</td>
+        <td>${c.telefone ? formatTelefone(c.telefone) : '-'}</td>
         <td><span class="badge ${c.status === 'Ativo' ? 'badge-ativo' : c.status === 'Inativo' ? 'badge-inativo' : 'badge-atencao'}">${c.status || 'Ativo'}</span></td>
         <td>
           <button class="btn-icon" onclick="editCadastro('${c.id}')">✎</button>
@@ -775,13 +792,13 @@ document.getElementById('form-cadastro').addEventListener('submit', async e => {
   e.preventDefault()
   const id = document.getElementById('fc-id').value
   const payload = {
-    razao_social:   document.getElementById('fc-razao').value.trim(),
+    razao_social:   smartTitle(document.getElementById('fc-razao').value),
     cnpj:           document.getElementById('fc-cnpj').value.trim() || null,
     classificacao:  document.getElementById('fc-classificacao').value || null,
     status:         document.getElementById('fc-status').value,
     cidade:         document.getElementById('fc-cidade').value.trim() || null,
     uf:             document.getElementById('fc-uf').value || null,
-    telefone:       document.getElementById('fc-telefone').value.trim() || null,
+    telefone:       formatTelefone(document.getElementById('fc-telefone').value) || null,
     email:          document.getElementById('fc-email').value.trim() || null,
     cnae:           document.getElementById('fc-cnae').value.trim() || null,
     limite_credito: parseFloat(document.getElementById('fc-limite').value) || null,
