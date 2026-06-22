@@ -25,7 +25,7 @@ def inserir(tabela, rows, batch=500):
         data = json.dumps(lote).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers=headers, method='POST')
         try:
-            with urllib.request.urlopen(req):
+            with urllib.request.urlopen(req, timeout=60):
                 total += len(lote)
                 print(f'  lote {i//batch+1}: +{len(lote)} ({total}/{len(rows)})', flush=True)
         except urllib.error.HTTPError as e:

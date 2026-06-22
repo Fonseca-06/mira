@@ -180,6 +180,9 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 
 // ─── HELPERS DE EXIBIÇÃO (compartilhados Comparativo + Cruzamento) ───────────
 
+// Escapa texto vindo do banco antes de injetar em innerHTML (proteção contra XSS armazenado)
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+
 const fmtBRL     = v => v != null ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'
 const fmtData    = d => d ? d.split('-').reverse().join('/') : '—'
 const fmtDataMut = d => `<span style="color:var(--text-muted);font-size:11px">${fmtData(d)}</span>`
@@ -193,9 +196,9 @@ function detalhePrecoAPreco(d, domId) {
               : j === d.detalhes.length - 1 ? '<span class="badge badge-caro" style="margin-left:6px">maior</span>' : ''
     return `<tr>
       <td>${fmtBRL(c.preco)}${tag}</td>
-      <td>${c.marca}</td>
-      <td>${c.fornecedor}</td>
-      <td>${c.uf}</td>
+      <td>${esc(c.marca)}</td>
+      <td>${esc(c.fornecedor)}</td>
+      <td>${esc(c.uf)}</td>
       <td>${fmtDataMut(c.data)}</td>
       <td style="font-weight:600;color:${gapColor(c.gap)}">${fmtGap(c.gap)}</td>
     </tr>`
@@ -416,8 +419,8 @@ function renderComparativo() {
   document.getElementById('comp-tbody').innerHTML = dados.length
     ? dados.map((d, i) => {
         const resumo = `<tr style="cursor:pointer" onclick="toggleDetail('comp-det-${i}')">
-          <td><strong>${d.medida}</strong> <span style="color:var(--text-muted);font-size:11px">▸</span></td>
-          <td>${d.uf}</td>
+          <td><strong>${esc(d.medida)}</strong> <span style="color:var(--text-muted);font-size:11px">▸</span></td>
+          <td>${esc(d.uf)}</td>
           <td>${d.meuPreco ? fmtBRL(d.meuPreco) + '<br>' + fmtDataMut(d.meuData) : '<span style="color:var(--text-muted)">sem preço meu</span>'}</td>
           <td>${fmtBRL(d.menorConc)}</td>
           <td>${fmtBRL(d.medioConc)}</td>
@@ -499,14 +502,14 @@ function renderCruz() {
   tb.innerHTML = cruzResultados.map((d, i) => {
     if (d.qtd === 0) {
       return `<tr>
-        <td><strong>${d.medida}</strong></td><td>${d.uf}</td><td>${fmtBRL(d.meuPreco)}</td>
+        <td><strong>${esc(d.medida)}</strong></td><td>${esc(d.uf)}</td><td>${fmtBRL(d.meuPreco)}</td>
         <td colspan="6" style="color:var(--text-muted)">Sem concorrente cadastrado nessa medida/UF</td>
       </tr>`
     }
 
     const resumo = `<tr style="cursor:pointer" onclick="toggleDetail('cruz-det-${i}')">
-      <td><strong>${d.medida}</strong> <span style="color:var(--text-muted);font-size:11px">▸</span></td>
-      <td>${d.uf}</td>
+      <td><strong>${esc(d.medida)}</strong> <span style="color:var(--text-muted);font-size:11px">▸</span></td>
+      <td>${esc(d.uf)}</td>
       <td>${fmtBRL(d.meuPreco)}</td>
       <td>${fmtBRL(d.menor)}</td>
       <td>${fmtBRL(d.medio)}</td>
@@ -535,7 +538,7 @@ document.getElementById('cruz-add').addEventListener('click', () => {
   const medida = document.getElementById('cruz-medida').value.trim()
   const uf     = document.getElementById('cruz-uf').value
   const preco  = parseFloat(document.getElementById('cruz-preco').value)
-  if (!medida || !preco) { toast('Preencha pelo menos medida e preço', 'error'); return }
+  if (!medida || !(preco > 0)) { toast('Informe a medida e um preço maior que zero', 'error'); return }
   cruzResultados.unshift(cruzarLinha(medida, uf, preco))
   renderCruz()
   document.getElementById('cruz-medida').value = ''
@@ -568,7 +571,7 @@ document.getElementById('cruz-file').addEventListener('change', e => {
     lines.slice(1).forEach(line => {
       const v = line.split(',').map(x => x.trim().replace(/^["']|["']$/g, ''))
       const medida = v[im], uf = iu >= 0 ? (v[iu] || '') : '', preco = parseFloat(v[ip])
-      if (medida && preco) { cruzResultados.push(cruzarLinha(medida, uf, preco)); n++ }
+      if (medida && preco > 0) { cruzResultados.push(cruzarLinha(medida, uf, preco)); n++ }
     })
     renderCruz()
     toast(`${n} preços cruzados`)
@@ -597,14 +600,14 @@ function renderPrecos() {
   document.getElementById('precos-tbody').innerHTML = precosRaw.length
     ? precosRaw.map(p => `
       <tr>
-        <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${p.origem}</span></td>
-        <td><strong>${p.medida}</strong></td>
-        <td>${p.marca || '-'}</td>
-        <td>${p.fornecedor || '-'}</td>
-        <td>${p.uf || '-'}</td>
+        <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${esc(p.origem)}</span></td>
+        <td><strong>${esc(p.medida)}</strong></td>
+        <td>${esc(p.marca) || '-'}</td>
+        <td>${esc(p.fornecedor) || '-'}</td>
+        <td>${esc(p.uf) || '-'}</td>
         <td>${brl(p.preco)}</td>
-        <td>${p.fonte || '-'}</td>
-        <td>${p.data || '-'}</td>
+        <td>${esc(p.fonte) || '-'}</td>
+        <td>${esc(p.data) || '-'}</td>
         <td>
           <button class="btn-icon" onclick="editPreco('${p.id}')">✎</button>
           <button class="btn-icon danger" onclick="deletePreco('${p.id}')">✕</button>
@@ -658,6 +661,8 @@ async function deletePreco(id) {
 document.getElementById('form-preco').addEventListener('submit', async e => {
   e.preventDefault()
   const id = document.getElementById('fp-id').value
+  const precoNum = parseFloat(document.getElementById('fp-preco').value)
+  if (!(precoNum > 0)) { toast('Preço deve ser maior que zero', 'error'); return }
   const payload = {
     origem:     document.getElementById('fp-origem').value,
     medida:     medidaCanonica(document.getElementById('fp-medida').value),
@@ -665,7 +670,7 @@ document.getElementById('form-preco').addEventListener('submit', async e => {
     descricao:  document.getElementById('fp-descricao').value.trim() || null,
     fornecedor: document.getElementById('fp-fornecedor').value.trim() || null,
     uf:         document.getElementById('fp-uf').value || null,
-    preco:      parseFloat(document.getElementById('fp-preco').value),
+    preco:      precoNum,
     data:       document.getElementById('fp-data').value,
     fonte:      document.getElementById('fp-fonte').value || null,
     categoria:  document.getElementById('fp-categoria').value.trim() || null,
@@ -676,7 +681,7 @@ document.getElementById('form-preco').addEventListener('submit', async e => {
     ? await db.from('precos').update(payload).eq('id', id)
     : await db.from('precos').insert(payload)
 
-  if (error) { toast('Erro: ' + error.message, 'error'); return }
+  if (error) { console.error(error); toast('Não foi possível salvar. Tente novamente.', 'error'); return }
   toast(id ? 'Preço atualizado' : 'Preço salvo')
   document.getElementById('modal-preco').classList.add('hidden')
   await loadPrecos()
@@ -728,7 +733,7 @@ document.getElementById('csv-file').addEventListener('change', e => {
         obs:        row.obs || null,
         categoria:  row.categoria || null,
       }
-    }).filter(r => r.medida && r.preco)
+    }).filter(r => r.medida && r.preco > 0)
 
     document.getElementById('csv-count').textContent = `✓ ${csvRows.length} registros válidos`
     document.getElementById('csv-preview').style.display = 'block'
@@ -740,7 +745,7 @@ document.getElementById('csv-file').addEventListener('change', e => {
 document.getElementById('btn-confirmar-csv').addEventListener('click', async () => {
   if (!csvRows.length) return
   const { error } = await db.from('precos').insert(csvRows)
-  if (error) { toast('Erro na importação: ' + error.message, 'error'); return }
+  if (error) { console.error(error); toast('Erro na importação. Verifique o arquivo e tente novamente.', 'error'); return }
   toast(`${csvRows.length} preços importados com sucesso`)
   document.getElementById('modal-csv').classList.add('hidden')
   await loadPrecos()
@@ -781,12 +786,12 @@ async function searchCadastro() {
   document.getElementById('cad-tbody').innerHTML = cadastros.length
     ? cadastros.map(c => `
       <tr>
-        <td><strong>${c.razao_social}</strong></td>
-        <td>${c.cnpj || '-'}</td>
+        <td><strong>${esc(c.razao_social)}</strong></td>
+        <td>${esc(c.cnpj) || '-'}</td>
         <td>${c.classificacao ? badgeClassificacao(c.classificacao) : '-'}</td>
-        <td>${[c.cidade, c.uf].filter(Boolean).join('/') || '-'}</td>
-        <td>${c.telefone ? formatTelefone(c.telefone) : '-'}</td>
-        <td><span class="badge ${c.status === 'Ativo' ? 'badge-ativo' : c.status === 'Inativo' ? 'badge-inativo' : 'badge-atencao'}">${c.status || 'Ativo'}</span></td>
+        <td>${[c.cidade, c.uf].filter(Boolean).map(esc).join('/') || '-'}</td>
+        <td>${c.telefone ? esc(formatTelefone(c.telefone)) : '-'}</td>
+        <td><span class="badge ${c.status === 'Ativo' ? 'badge-ativo' : c.status === 'Inativo' ? 'badge-inativo' : 'badge-atencao'}">${esc(c.status) || 'Ativo'}</span></td>
         <td>
           <button class="btn-icon" onclick="editCadastro('${c.id}')">✎</button>
           <button class="btn-icon danger" onclick="deleteCadastro('${c.id}')">✕</button>
@@ -799,7 +804,7 @@ function badgeClassificacao(cls) {
   const map = { 'Cliente': 'badge-cliente', 'Lead': 'badge-lead',
     'Fornecedor Importador': 'badge-fornecedor', 'Fornecedor Nacional': 'badge-fornecedor',
     'Concorrente': 'badge-concorrente' }
-  return `<span class="badge ${map[cls] || ''}">${cls}</span>`
+  return `<span class="badge ${map[cls] || ''}">${esc(cls)}</span>`
 }
 
 document.getElementById('btn-novo-cadastro').addEventListener('click', () => {
@@ -857,7 +862,7 @@ document.getElementById('form-cadastro').addEventListener('submit', async e => {
     ? await db.from('cadastro').update(payload).eq('id', id)
     : await db.from('cadastro').insert(payload)
 
-  if (error) { toast('Erro: ' + error.message, 'error'); return }
+  if (error) { console.error(error); toast('Não foi possível salvar. Tente novamente.', 'error'); return }
   toast(id ? 'Cadastro atualizado' : 'Cadastro salvo')
   document.getElementById('modal-cadastro').classList.add('hidden')
   searchCadastro()
@@ -895,7 +900,7 @@ document.getElementById('hist-medida').addEventListener('change', async e => {
   const marcas       = [...new Set(histRows.map(p => p.marca).filter(Boolean))].sort()
   const fillSel = (id, vazio, vals) => {
     document.getElementById(id).innerHTML =
-      `<option value="">${vazio}</option>` + vals.map(v => `<option>${v}</option>`).join('')
+      `<option value="">${vazio}</option>` + vals.map(v => `<option>${esc(v)}</option>`).join('')
   }
   fillSel('hist-fornecedor', 'Todas as empresas', fornecedores)
   fillSel('hist-marca', 'Todas as marcas', marcas)
@@ -990,9 +995,9 @@ function renderHist() {
         : '-'
       return `<tr>
         <td>${fmtData(p.data)}</td>
-        <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${p.origem}</span></td>
-        <td>${p.marca || '-'}</td>
-        <td>${p.fornecedor || '-'}</td>
+        <td><span class="badge ${p.origem === 'Meu' ? 'badge-meu' : 'badge-concorrente'}">${esc(p.origem)}</span></td>
+        <td>${esc(p.marca) || '-'}</td>
+        <td>${esc(p.fornecedor) || '-'}</td>
         <td>${brl(p.preco)}</td>
         <td>${gap}</td>
       </tr>`
@@ -1014,8 +1019,8 @@ async function loadCatalogo() {
 }
 
 function updateDataLists() {
-  document.getElementById('dl-medidas').innerHTML = medidas.map(m => `<option value="${m.medida}">`).join('')
-  document.getElementById('dl-marcas').innerHTML  = marcas.map(m => `<option value="${m.marca}">`).join('')
+  document.getElementById('dl-medidas').innerHTML = medidas.map(m => `<option value="${esc(m.medida)}">`).join('')
+  document.getElementById('dl-marcas').innerHTML  = marcas.map(m => `<option value="${esc(m.marca)}">`).join('')
 }
 
 function renderMedidas() {
@@ -1024,9 +1029,9 @@ function renderMedidas() {
   document.getElementById('medidas-tbody').innerHTML = filtered.length
     ? filtered.map(m => `
       <tr>
-        <td><strong>${m.medida}</strong></td>
-        <td>${m.categoria || '-'}</td>
-        <td>${m.aro || '-'}</td>
+        <td><strong>${esc(m.medida)}</strong></td>
+        <td>${esc(m.categoria) || '-'}</td>
+        <td>${esc(m.aro) || '-'}</td>
         <td>
           <button class="btn-icon" onclick="editMedida('${m.id}')">✎</button>
           <button class="btn-icon danger" onclick="deleteMedida('${m.id}')">✕</button>
@@ -1041,9 +1046,9 @@ function renderMarcas() {
   document.getElementById('marcas-tbody').innerHTML = filtered.length
     ? filtered.map(m => `
       <tr>
-        <td><strong>${m.marca}</strong></td>
-        <td>${m.segmento || '-'}</td>
-        <td>${m.origem_marca || '-'}</td>
+        <td><strong>${esc(m.marca)}</strong></td>
+        <td>${esc(m.segmento) || '-'}</td>
+        <td>${esc(m.origem_marca) || '-'}</td>
         <td>
           <button class="btn-icon" onclick="editMarca('${m.id}')">✎</button>
           <button class="btn-icon danger" onclick="deleteMarca('${m.id}')">✕</button>
@@ -1102,7 +1107,7 @@ document.getElementById('form-medida').addEventListener('submit', async e => {
   const { error } = id
     ? await db.from('ref_medidas').update(payload).eq('id', id)
     : await db.from('ref_medidas').insert(payload)
-  if (error) { toast('Erro: ' + error.message, 'error'); return }
+  if (error) { console.error(error); toast('Não foi possível salvar. Tente novamente.', 'error'); return }
   toast(id ? 'Medida atualizada' : 'Medida salva')
   document.getElementById('modal-medida').classList.add('hidden')
   loadCatalogo()
@@ -1145,7 +1150,7 @@ document.getElementById('form-marca').addEventListener('submit', async e => {
   const { error } = id
     ? await db.from('ref_marcas').update(payload).eq('id', id)
     : await db.from('ref_marcas').insert(payload)
-  if (error) { toast('Erro: ' + error.message, 'error'); return }
+  if (error) { console.error(error); toast('Não foi possível salvar. Tente novamente.', 'error'); return }
   toast(id ? 'Marca atualizada' : 'Marca salva')
   document.getElementById('modal-marca').classList.add('hidden')
   loadCatalogo()
