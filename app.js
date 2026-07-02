@@ -319,6 +319,48 @@ function tituloCase(s) {
   return (s || '').trim().toLowerCase().replace(/(^|[\s\-/(.])([a-zà-ÿ])/g, (_, p, c) => p + c.toUpperCase())
 }
 
+// ─── CSV (aceita , ou ; como separador, BOM do Excel e preço com vírgula) ─────
+
+// Divide uma linha respeitando campos entre aspas (podem conter o separador)
+function splitCSVLine(line, delim) {
+  const out = []
+  let cur = '', inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (inQuotes) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++ }
+      else if (c === '"') inQuotes = false
+      else cur += c
+    } else if (c === '"') inQuotes = true
+    else if (c === delim) { out.push(cur); cur = '' }
+    else cur += c
+  }
+  out.push(cur)
+  return out.map(v => v.trim())
+}
+
+// Remove BOM, detecta o separador (, ou ;) pelo cabeçalho e devolve as linhas já divididas
+function parseCSV(text) {
+  const semBom = text.replace(/^﻿/, '')
+  const lines = semBom.trim().split(/\r?\n/).filter(l => l.trim())
+  if (!lines.length) return { headers: [], linhas: [] }
+  const delim = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ','
+  const headers = splitCSVLine(lines[0], delim).map(h => h.toLowerCase())
+  const linhas = lines.slice(1).map(l => splitCSVLine(l, delim))
+  return { headers, linhas }
+}
+
+// Converte número em formato BR (1.234,56 ou 150,50) ou US (150.50) para float
+function parseNumeroBR(v) {
+  if (v == null) return NaN
+  let s = String(v).trim().replace(/[^\d.,-]/g, '')
+  if (!s) return NaN
+  const ultimaVirgula = s.lastIndexOf(','), ultimoPonto = s.lastIndexOf('.')
+  if (ultimaVirgula > ultimoPonto) s = s.replace(/\./g, '').replace(',', '.')
+  else s = s.replace(/,/g, '')
+  return parseFloat(s)
+}
+
 // Título preservando siglas de empresa (LTDA/ME...) e minúsculas em de/da/do/e
 function smartTitle(s) {
   return tituloCase(s)
@@ -562,15 +604,13 @@ document.getElementById('cruz-file').addEventListener('change', e => {
   if (!file) return
   const reader = new FileReader()
   reader.onload = ev => {
-    const lines = ev.target.result.trim().split('\n').filter(l => l.trim())
-    if (lines.length < 2) { toast('CSV sem dados', 'error'); return }
-    const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, '').toLowerCase())
+    const { headers, linhas } = parseCSV(ev.target.result)
+    if (!linhas.length) { toast('CSV sem dados', 'error'); return }
     const im = headers.indexOf('medida'), iu = headers.indexOf('uf'), ip = headers.indexOf('preco')
     if (im < 0 || ip < 0) { toast('CSV precisa pelo menos das colunas: medida, preco', 'error'); return }
     let n = 0
-    lines.slice(1).forEach(line => {
-      const v = line.split(',').map(x => x.trim().replace(/^["']|["']$/g, ''))
-      const medida = v[im], uf = iu >= 0 ? (v[iu] || '') : '', preco = parseFloat(v[ip])
+    linhas.forEach(v => {
+      const medida = v[im], uf = iu >= 0 ? (v[iu] || '') : '', preco = parseNumeroBR(v[ip])
       if (medida && preco > 0) { cruzResultados.push(cruzarLinha(medida, uf, preco)); n++ }
     })
     renderCruz()
@@ -714,11 +754,12 @@ document.getElementById('csv-file').addEventListener('change', e => {
   if (!file) return
   const reader = new FileReader()
   reader.onload = ev => {
-    const lines = ev.target.result.trim().split('\n').filter(l => l.trim())
-    if (lines.length < 2) { toast('CSV sem dados', 'error'); return }
-    const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, '').toLowerCase())
-    csvRows = lines.slice(1).map(line => {
-      const vals = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
+    const { headers, linhas } = parseCSV(ev.target.result)
+    if (!linhas.length) { toast('CSV sem dados', 'error'); return }
+    if (headers.indexOf('medida') < 0 || headers.indexOf('preco') < 0) {
+      toast('CSV precisa pelo menos das colunas: medida, preco', 'error'); return
+    }
+    csvRows = linhas.map(vals => {
       const row = {}
       headers.forEach((h, i) => row[h] = vals[i] || null)
       return {
@@ -727,7 +768,7 @@ document.getElementById('csv-file').addEventListener('change', e => {
         marca:      row.marca ? tituloCase(row.marca) : null,
         fornecedor: row.fornecedor || null,
         uf:         row.uf || null,
-        preco:      parseFloat(row.preco) || null,
+        preco:      parseNumeroBR(row.preco) || null,
         fonte:      row.fonte || null,
         data:       row.data || new Date().toISOString().split('T')[0],
         obs:        row.obs || null,
